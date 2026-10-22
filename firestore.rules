@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // Validation helper for VoiceModel
+    function isValidVoiceModel(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100
+          && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128
+          && data.audioUrl is string && data.audioUrl.size() > 0 && data.audioUrl.size() <= 1024
+          && data.createdAt is timestamp
+          && data.status in ["pending", "training", "ready"];
+    }
+
+    // VoiceModels Collection
+    match /voiceModels/{voiceModelId} {
+      allow read: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isSignedIn() && isValidId(voiceModelId) && isValidVoiceModel(incoming()) && incoming().userId == request.auth.uid && incoming().createdAt == request.time;
+      allow update: if isSignedIn() && isOwner(existing().userId) && isValidVoiceModel(incoming()) && incoming().userId == existing().userId && incoming().createdAt == existing().createdAt;
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "entities": {
+    "VoiceModel": {
+      "title": "VoiceModel",
+      "description": "A voice model created from user uploaded audio",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "userId": { "type": "string" },
+        "audioUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "training", "ready"] }
+      },
+      "required": ["id", "name", "userId", "audioUrl", "createdAt", "status"]
+    }
+  },
+  "firestore": {
+    "/voiceModels/{voiceModelId}": {
+      "schema": "VoiceModel",
+      "description": "Collection of user-created voice models"
+    }
+  }
+}
